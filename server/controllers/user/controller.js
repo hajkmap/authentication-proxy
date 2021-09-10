@@ -1,7 +1,10 @@
 import bcrypt from "bcrypt";
 import UserService from "../../services/user.service";
 import UsersRepository from "../../repositories/users.repository";
+import msalConfig from "../../config/msal";
 
+const msal = require("@azure/msal-node");
+const cca = new msal.ConfidentialClientApplication(msalConfig);
 class Controller {
   // Handles user logins
   login(req, res) {
@@ -125,6 +128,34 @@ class Controller {
     // If they for some reason doesn't match (an admin might have removed their token
     // from the database) they will have to login again.
     return res.redirect(`/login/?path=${req.query.path}`);
+  }
+
+  msal(req, res) {
+    cca
+      .getAuthCodeUrl(msalConfig.authCodeUrlParameters)
+      .then((response) => {
+        res.redirect(response);
+      })
+      .catch((error) => {
+        return res.status(401).json({ status: "Login failed" });
+      });
+  }
+
+  msalRedirect(req, res) {
+    const tokenRequest = {
+      code: req.query.code,
+      redirectUri: process.env.MSAL_REDIRECT_URL,
+      scopes: ["User.Read"],
+    };
+
+    cca
+      .acquireTokenByCode(tokenRequest)
+      .then((response) => {
+        res.redirect("/");
+      })
+      .catch((error) => {
+        return res.status(401).json({ status: "Login failed" });
+      });
   }
 }
 export default new Controller();
