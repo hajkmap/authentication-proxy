@@ -151,6 +151,13 @@ class Controller {
     cca
       .acquireTokenByCode(tokenRequest)
       .then((response) => {
+        // The plan is to either create a new user for the database here
+        // (or get the corresponding user if it already exist).
+        // Then create new tokens, and pass them in the response. The tokens
+        // will be used to authenticate the requests for a period of time.
+
+        // The "/msal" and "/msal-redirect" routes can be seen as both a "/register"
+        // and a "/login", depending on wether the user has signed in before ofc.
         res.redirect("/");
       })
       .catch((error) => {
