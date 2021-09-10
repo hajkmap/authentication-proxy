@@ -6,5 +6,15 @@ export default express
   .post("/login", controller.login)
   .post("/register", controller.register)
   .get("/refreshtoken", controller.refreshToken)
-  .get("/msal", controller.msal)
-  .get("/msal-redirect", controller.msalRedirect);
+  .get(
+    "/msal",
+    process.env.MSAL_ACTIVE === "true"
+      ? controller.msal
+      : controller.notImplemented
+  )
+  .get(
+    "/msal-redirect",
+    process.env.MSAL_ACTIVE === "true"
+      ? controller.msalRedirect
+      : controller.notImplemented
+  );

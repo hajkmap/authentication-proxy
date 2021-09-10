@@ -164,5 +164,11 @@ class Controller {
         return res.status(401).json({ status: "Login failed" });
       });
   }
+
+  notImplemented(req, res) {
+    return res
+      .status(401)
+      .json({ status: "Microsoft authentication not active" });
+  }
 }
 export default new Controller();
