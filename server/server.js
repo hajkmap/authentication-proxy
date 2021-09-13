@@ -15,7 +15,7 @@ const app = new Express();
 const exit = process.exit;
 
 // Routes that should be ignored by proxy and authentication
-const allowedRoutes = ["\\/user\\/*", "\\/login\\/*"];
+const allowedRoutes = ["\\/user\\/*", "\\/login\\/*", "\\/favicon.ico"];
 
 export default class ExpressServer {
   constructor() {
