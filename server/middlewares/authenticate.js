@@ -12,8 +12,7 @@ export default (req, res, next) => {
 
   // If no access-token is supplied at all, we redirect to the login-page
   if (!token) {
-    console.log("token missing completely");
-    return res.redirect(`/login/?path=${encodeURIComponent(req.path)}`);
+    return res.redirect(401, `/login/?path=${encodeURIComponent(req.path)}`);
   }
 
   // Otherwise, we check if the access-token is valid
@@ -29,8 +28,9 @@ export default (req, res, next) => {
       // If we can't find a matching user from the refresh-token,
       // we'll redirect the user to the login-page.
       if (!user) {
-        console.log("User not found from refresh token!");
-        return res.redirect(`/login/?path=${encodeURIComponent(req.path)}`);
+        return res.redirect(
+          `401, /login/?path=${encodeURIComponent(req.path)}`
+        );
       }
 
       // If a user is returned, the refresh is valid. However,
@@ -43,8 +43,10 @@ export default (req, res, next) => {
       // ...and make sure the refresh token in the database matches the supplied one.
       // If they don't match, we redirect the user to the login screen.
       if (dbUser.refreshToken !== req.cookies?.refreshToken) {
-        console.log("Refresh tokens not matching!");
-        return res.redirect(`/login/?path=${encodeURIComponent(req.path)}`);
+        return res.redirect(
+          401,
+          `/login/?path=${encodeURIComponent(req.path)}`
+        );
       }
       // If they do match, we can update the refresh token in the database
       // and provide new tokens to the user.
@@ -63,11 +65,9 @@ export default (req, res, next) => {
         });
 
       // And return next!
-      console.log("Refresh verification OK!, next");
       return next();
     }
     // If the access-token is verified without issues, we just return next
-    console.log("Verification OK!, next");
     return next();
   });
 };
