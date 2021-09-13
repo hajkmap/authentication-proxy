@@ -130,6 +130,10 @@ class Controller {
     return res.redirect(`/login/?path=${req.query.path}`);
   }
 
+  // If a user clicks "Sign in with microsoft", they will be routed
+  // here. A MSAL-url is created (the url points to a login-screen created
+  // by microsoft, and the user can authenticate to the tenant specified in .env),
+  // when the url is created, we redirect the user there.
   msal(req, res) {
     cca
       .getAuthCodeUrl(msalConfig.authCodeUrlParameters)
@@ -141,24 +145,102 @@ class Controller {
       });
   }
 
+  // When the user has *successfully* authenticated using the login-screen
+  // touched on above, they will be redirected to this route. (The redirect route is
+  // set both in .env and in the application registered in Azure portal).
+
+  // The request to this route will contain a code, which can be used to acquire information
+  // about the user, as well as access- and refresh-tokens. In normal circumstances, these tokens
+  // would be used to keep authenticating the user. However, in this implementation, we've chosen
+  // to only use MSAL to login and register users, the refresh token is handled separately.
+
+  // The handling of access- and refresh-tokens is done by the local strategy. So, when the user
+  // has successfully authenticated using MSAL, we'll grab information about the authenticated user,
+  // and either grab the corresponding user in the database and update their refresh-token, or
+  // (if the user is signing in for the first time), add the user to the database.
+
+  // The reasoning behind this is that we want to keep track of all signed up users.
+
   msalRedirect(req, res) {
+    // Let's grab the code generated from MSAL and pass it in the token request config
     const tokenRequest = {
       code: req.query.code,
       redirectUri: process.env.MSAL_REDIRECT_URL,
       scopes: ["User.Read"],
     };
 
+    // Fetch information about the user
     cca
       .acquireTokenByCode(tokenRequest)
       .then((response) => {
-        // The plan is to either create a new user for the database here
-        // (or get the corresponding user if it already exist).
-        // Then create new tokens, and pass them in the response. The tokens
-        // will be used to authenticate the requests for a period of time.
+        // Some sanity checks to make sure the response is OK.
+        const { account } = response;
+        if (!account) {
+          return res.status(401).json({ status: "Login failed" });
+        }
+        const email = account.username ?? "";
+        if (email.length < 5) {
+          return res.status(401).json({ status: "Login failed" });
+        }
 
-        // The "/msal" and "/msal-redirect" routes can be seen as both a "/register"
-        // and a "/login", depending on wether the user has signed in before ofc.
-        res.redirect("/");
+        // Then we'll check if the user is registered in our database
+        const existingUser = UsersRepository.getUserByEmail(email);
+
+        // If the user does not exist, this path can be seen as a register
+        // route. Therefore, we'll create a new user.
+        if (!existingUser) {
+          // First, we have to generate a hashed password. This password
+          // will never get used, but instead makes sure that no-one else
+          // can get access to the proxy-account.
+          const hash = bcrypt.hashSync(
+            require("crypto").randomBytes(64).toString("hex"),
+            10
+          );
+
+          // Then we create a user object.
+          const user = {
+            firstName: account?.name.split(" ")[0] ?? "",
+            lastName: account?.name.split(" ")[1] ?? "",
+            email: email,
+            password: hash,
+            role: process.env.DEFAULT_USER_ROLE,
+          };
+
+          // Let's create som tokens
+          const tokens = UserService.getTokens(user);
+          // and add the refresh token to the user-object so that we can save it in the db
+          user.refreshToken = tokens.refreshToken;
+          // ...and save the user to the database.
+          UsersRepository.create(user);
+
+          // Then we'll set cookies and redirect the user.
+          return res
+            .cookie("token", tokens.token, {
+              httpOnly: true,
+            })
+            .cookie("refreshToken", tokens.refreshToken, {
+              httpOnly: true,
+            })
+            .redirect("/");
+        }
+
+        // If the user does exist in the database, we only have to update the corresponding refresh-token
+        // and return a new access- and refresh-token to the user.
+
+        // Let's create som tokens
+        const tokens = UserService.getTokens(existingUser);
+        // And update the refresh token in the database
+        UsersRepository.updateRefreshToken(existingUser, tokens.refreshToken);
+
+        // Then we'll set cookies and redirect the user.
+        return res
+          .cookie("token", tokens.token, {
+            httpOnly: true,
+          })
+          .cookie("refreshToken", tokens.refreshToken, {
+            httpOnly: true,
+          })
+          .redirect("/");
       })
       .catch((error) => {
         return res.status(401).json({ status: "Login failed" });
