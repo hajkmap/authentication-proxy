@@ -28,9 +28,7 @@ export default (req, res, next) => {
       // If we can't find a matching user from the refresh-token,
       // we'll redirect the user to the login-page.
       if (!user) {
-        return res.redirect(
-          `401, /login/?path=${encodeURIComponent(req.path)}`
-        );
+        return res.redirect(401`/login/?path=${encodeURIComponent(req.path)}`);
       }
 
       // If a user is returned, the refresh is valid. However,
