@@ -1,89 +1,88 @@
 <html>
-<head>
-  <title>Sign in</title>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-  <style>
-      .login-form {
-          background: #f7f7f7;
-          box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.3);
-          padding: 30px;
-      }
-      .or-seperator {
-          margin: 30px 0 0;
-          text-align: center;
-          border-top: 1px solid #ccc;
-      }
-      .or-seperator i {
-          padding: 0 10px;
-          background: #f7f7f7;
-          position: relative;
-          top: -11px;
-          z-index: 1;
-      }
-      .social-btn .btn {
-          margin: 10px 0;
-          font-size: 15px;
-          text-align: center; 
-          line-height: 24px;       
-      }
-    .social-btn .btn i {
-      float: left;
-      margin: 4px 15px  0 5px;
-          min-width: 15px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container" style="height:100%;">
-    <div class="jumbotron login-form"  style="padding:20px; margin-top:100px;">
-      <h1 class="text-center">Sign in</h1>
-      <p class="text-center">To access the required resource you must sign in.</p>
-      <form id="sign-in-form">
-        <div class="text-center social-btn">
-          <a href="/user/msal" class="btn btn-primary btn-block"> Sign in with <b>Microsoft</b></a>
-        </div>
-        <div class="or-seperator"><i>or</i></div>
-        <div class="form-group">
-          <label for="emailInput">Email address</label>
-          <input type="email" class="form-control" id="emailInput" aria-describedby="emailHelp" placeholder="Enter email" required>
-        </div>
-        <div class="form-group">
-          <label for="passwordInput">Password</label>
-          <input minlength="7" type="password" class="form-control" id="passwordInput" placeholder="Password" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Sign in</button>
-      </form>
+  <head>
+    <title>Sign in</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+    />
+    <link rel="stylesheet" href="./index.css" />
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  </head>
+  <body>
+    <div class="container" style="height: 100%">
+      <div
+        class="jumbotron login-form"
+        style="padding: 20px; margin-top: 100px"
+      >
+        <h1 class="text-center">Sign in</h1>
+        <p class="text-center">
+          To access the required resource you must sign in.
+        </p>
+        <form id="sign-in-form">
+          <div class="text-center social-btn">
+            <a href="/user/msal" class="btn btn-primary btn-block">
+              Sign in with <b>Microsoft</b></a
+            >
+          </div>
+          <div class="or-seperator"><i>or</i></div>
+          <div class="form-group">
+            <label for="emailInput">Email address</label>
+            <input
+              type="email"
+              class="form-control"
+              id="emailInput"
+              aria-describedby="emailHelp"
+              placeholder="Enter email"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="passwordInput">Password</label>
+            <input
+              minlength="7"
+              type="password"
+              class="form-control"
+              id="passwordInput"
+              placeholder="Password"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary">Sign in</button>
+        </form>
+      </div>
     </div>
-  </div>
-</body>
+  </body>
 
-<script>
-  (function() {
-    'use strict';
-    window.addEventListener('load', function() {
-      const form = document.getElementById("sign-in-form");
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        if (form.checkValidity() === false) {
-            event.stopPropagation();
-        } else {
-          const email = document.getElementById("emailInput").value;
-          const password = document.getElementById("passwordInput").value;
-          fetch("/user/login", {
-            method: 'POST',
-            mode: 'cors',
-            cache: 'no-cache',
-            credentials: 'same-origin',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({email: email, password: password})
-          }).then((response) => {
-            response.json().then((data) => {
-              console.log("data: ", data);
+  <script>
+    (function () {
+      "use strict";
+      window.addEventListener(
+        "load",
+        function () {
+          const form = document.getElementById("sign-in-form");
+          form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (form.checkValidity() === false) {
+              event.stopPropagation();
+            } else {
+              const email = document.getElementById("emailInput").value;
+              const password = document.getElementById("passwordInput").value;
+              const response = await fetch("/user/login", {
+                method: "POST",
+                mode: "cors",
+                cache: "no-cache",
+                credentials: "same-origin",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ email: email, password: password }),
+              });
+              const data = await response.json();
               if (data.status !== "Success") {
                 location.reload();
               } else {
@@ -93,12 +92,11 @@
                 const redirect = originalPath ?? "/";
                 window.location.replace(`${decodeURIComponent(redirect)}`);
               }
-            })
+            }
           });
-          
-        }
-      });     
-    }, false);
-  })();
+        },
+        false
+      );
+    })();
   </script>
 </html>
