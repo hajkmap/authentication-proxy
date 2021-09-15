@@ -4,7 +4,12 @@ import UsersRepository from "../../repositories/users.repository";
 import msalConfig from "../../config/msal";
 
 const msal = require("@azure/msal-node");
-const cca = new msal.ConfidentialClientApplication(msalConfig);
+
+// Only attempt to create the CCA object if MSAL is activated in .env.
+const cca =
+  process.env.MSAL_ACTIVE === "true"
+    ? new msal.ConfidentialClientApplication(msalConfig)
+    : null;
 class Controller {
   // Handles user logins
   login(req, res) {
